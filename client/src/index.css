@@ -1,0 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Poppins:wght@300;400;500;600&display=swap");
+
+@import "tailwindcss";
+
+:root {
+  font-family: "Poppins", sans-serif;
+  color: #f2f2f2;
+  background: #111111;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background-color: #111111;
+  background-image: url("/food-pattern.svg");
+  background-repeat: repeat;
+  background-size: 360px 360px;
+
+  color: #f2f2f2;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Main display typography */
+.heading-font {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+}
+
+/* Red accent */
+.text-brand-red {
+  color: #d92323;
+}
+
+.bg-brand-red {
+  background-color: #d92323;
+}
+
+.border-brand-red {
+  border-color: #d92323;
+}
+
+/* Subtle dark surfaces */
+.surface {
+  background: rgba(15, 15, 15, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d0d0d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d92323;
+}

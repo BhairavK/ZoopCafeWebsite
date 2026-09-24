@@ -1,0 +1,522 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =====================================================
+// RESTAURANT
+// =====================================================
+
+model Restaurant {
+  id           Int           @id @default(autoincrement())
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  categories   Category[]
+  reviews      Review[]
+  orders       Order[]
+  dineInTables DineInTable[]
+
+  @@map("restaurants")
+}
+
+// =====================================================
+// CATEGORY
+// =====================================================
+
+model Category {
+  id           Int     @id @default(autoincrement())
+  restaurantId Int
+  name         String
+  description  String?
+  imageUrl     String?
+  displayOrder Int     @default(0)
+  isActive     Boolean @default(true)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItems  MenuItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId, displayOrder])
+  @@map("categories")
+}
+
+// =====================================================
+// MENU ITEM
+// =====================================================
+
+enum MenuItemType {
+  PRODUCT
+  COMBO
+}
+
+enum DietaryType {
+  VEG
+  NON_VEG
+  EGG
+}
+
+model MenuItem {
+  id          Int          @id @default(autoincrement())
+  categoryId  Int
+  name        String
+  description String?
+  imageUrl    String?
+  type        MenuItemType @default(PRODUCT)
+  dietaryType DietaryType
+
+  isPopular   Boolean @default(false)
+  isAvailable Boolean @default(true)
+
+  // If true, this item is only usable inside combos.
+  // It must not appear as a standalone normal-menu item.
+  isComboExclusive Boolean @default(false)
+
+  displayOrder Int @default(0)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  variants MenuItemVariant[]
+  reviews  Review[]
+
+  // Fixed items inside a combo
+  comboItems ComboItem[] @relation("Combo")
+
+  // Choice groups belonging to this combo
+  comboChoiceGroups ComboChoiceGroup[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId, displayOrder])
+  @@index([categoryId, dietaryType])
+  @@index([categoryId, isPopular])
+  @@index([categoryId, isComboExclusive])
+  @@map("menu_items")
+}
+
+// =====================================================
+// MENU ITEM VARIANT
+// =====================================================
+
+model MenuItemVariant {
+  id         Int     @id @default(autoincrement())
+  menuItemId Int
+  name       String
+  price      Decimal @db.Decimal(10, 2)
+
+  isAvailable  Boolean @default(true)
+  displayOrder Int     @default(0)
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  // Fixed combo contents
+  comboItems ComboItem[]
+
+  // Choice options
+  comboChoiceOptions ComboChoiceOption[]
+
+  // Orders containing this variant
+  orderItems OrderItem[]
+
+  // Historical combo choices
+  orderItemChoices OrderItemChoice[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  dineInBillItems DineInBillItem[]
+
+  @@unique([menuItemId, name])
+  @@index([menuItemId, displayOrder])
+  @@map("menu_item_variants")
+}
+
+// =====================================================
+// COMBO ITEM
+// =====================================================
+//
+// Represents a fixed item contained inside a combo.
+//
+// quantity:
+//   Number of normal servings/variants included.
+//
+// servingLabel:
+//   Optional text shown to the customer when the combo
+//   contains a partial quantity that does not match the
+//   normal menu variant.
+//
+// Example:
+//
+// Normal menu:
+//   Small Veg Corn Rolls (6)
+//
+// Combo:
+//   Small Veg Corn Rolls (4)
+//
+// Database:
+//   menuItemVariantId -> Small Veg Corn Rolls / 6
+//   quantity = 1
+//   servingLabel = "4 Pieces"
+//
+// We do NOT create a fake "(4)" variant.
+//
+
+model ComboItem {
+  id Int @id @default(autoincrement())
+
+  comboId           Int
+  menuItemVariantId Int
+
+  quantity Int @default(1)
+
+  // Optional combo-specific serving description.
+  // Example: "4 Pieces", "8 Pieces", "Large", etc.
+  servingLabel String?
+
+  combo MenuItem @relation("Combo", fields: [comboId], references: [id], onDelete: Cascade)
+
+  menuItemVariant MenuItemVariant @relation(fields: [menuItemVariantId], references: [id], onDelete: Restrict)
+
+  @@unique([comboId, menuItemVariantId])
+  @@index([menuItemVariantId])
+  @@map("combo_items")
+}
+
+// =====================================================
+// COMBO CHOICE GROUP
+// =====================================================
+
+enum ComboChoiceGroupType {
+  MOCKTAIL
+  SOFT_DRINK
+  CUSTOM
+}
+
+model ComboChoiceGroup {
+  id Int @id @default(autoincrement())
+
+  comboId Int
+
+  name String
+
+  type ComboChoiceGroupType @default(CUSTOM)
+
+  minSelections Int @default(1)
+  maxSelections Int @default(1)
+
+  displayOrder Int @default(0)
+
+  combo   MenuItem            @relation(fields: [comboId], references: [id], onDelete: Cascade)
+  options ComboChoiceOption[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([comboId, displayOrder])
+  @@index([comboId, type])
+  @@map("combo_choice_groups")
+}
+
+// =====================================================
+// COMBO CHOICE OPTION
+// =====================================================
+
+model ComboChoiceOption {
+  id Int @id @default(autoincrement())
+
+  choiceGroupId     Int
+  menuItemVariantId Int
+
+  displayOrder Int @default(0)
+
+  choiceGroup ComboChoiceGroup @relation(fields: [choiceGroupId], references: [id], onDelete: Cascade)
+
+  menuItemVariant MenuItemVariant @relation(fields: [menuItemVariantId], references: [id], onDelete: Restrict)
+
+  @@unique([choiceGroupId, menuItemVariantId])
+  @@index([choiceGroupId, displayOrder])
+  @@map("combo_choice_options")
+}
+
+// =====================================================
+// USER
+// =====================================================
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(CUSTOMER)
+
+  reviews Review[]
+  orders  Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// =====================================================
+// REVIEW
+// =====================================================
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Review {
+  id Int @id @default(autoincrement())
+
+  userId       Int
+  restaurantId Int?
+  menuItemId   Int?
+
+  rating  Int
+  comment String?
+
+  status ReviewStatus @default(PENDING)
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItem   MenuItem?   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, restaurantId])
+  @@unique([userId, menuItemId])
+  @@index([restaurantId, status])
+  @@index([menuItemId, status])
+  @@index([userId])
+  @@map("reviews")
+}
+
+// =====================================================
+// ORDER
+// =====================================================
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  userId       Int
+  restaurantId Int
+
+  status OrderStatus @default(PENDING)
+
+  // Final amount charged for the order.
+  // Stored rather than calculated from the menu later.
+  totalAmount Decimal @db.Decimal(10, 2)
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Restrict)
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([restaurantId, createdAt])
+  @@index([restaurantId, status])
+  @@map("orders")
+}
+
+// =====================================================
+// ORDER ITEM
+// =====================================================
+//
+// Represents one item/variant purchased in an order.
+//
+// IMPORTANT:
+// name, variantName and unitPrice are snapshots.
+// We do NOT rely on current menu values when displaying
+// an old order.
+//
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+
+  orderId Int
+
+  // Reference to the menu variant that was purchased.
+  // Nullable so historical orders survive if the
+  // menu item/variant is eventually removed.
+  menuItemVariantId Int?
+
+  // Snapshot of menu information at purchase time.
+  itemName    String
+  variantName String?
+
+  unitPrice Decimal @db.Decimal(10, 2)
+  quantity  Int
+
+  // unitPrice * quantity
+  totalPrice Decimal @db.Decimal(10, 2)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  menuItemVariant MenuItemVariant? @relation(fields: [menuItemVariantId], references: [id], onDelete: SetNull)
+
+  // Choices selected for this item.
+  // Primarily useful when this OrderItem represents a combo.
+  choices OrderItemChoice[]
+
+  @@index([orderId])
+  @@index([menuItemVariantId])
+  @@map("order_items")
+}
+
+// =====================================================
+// ORDER ITEM CHOICE
+// =====================================================
+//
+// Stores the customer's actual selection from a combo.
+//
+// Example:
+//
+// Family Feast Combo
+//   Mocktail:
+//     Blue Mojito
+//     Strawberry
+//
+// The selected values are stored as snapshots.
+//
+
+model OrderItemChoice {
+  id Int @id @default(autoincrement())
+
+  orderItemId Int
+
+  // Reference to original choice group.
+  // Nullable for historical safety.
+  choiceGroupId Int?
+
+  // Snapshot of the choice group name.
+  choiceGroupName String
+
+  // Reference to selected menu variant.
+  // Nullable for historical safety.
+  menuItemVariantId Int?
+
+  // Snapshot of selected option.
+  optionName        String
+  optionVariantName String?
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  menuItemVariant MenuItemVariant? @relation(fields: [menuItemVariantId], references: [id], onDelete: SetNull)
+
+  @@index([orderItemId])
+  @@index([choiceGroupId])
+  @@map("order_item_choices")
+}
+
+// =====================================================
+// DINE-IN TABLE
+// =====================================================
+
+enum DineInTableStatus {
+  AVAILABLE
+  OCCUPIED
+}
+
+model DineInTable {
+  id           Int               @id @default(autoincrement())
+  restaurantId Int
+  tableNumber  Int
+  status       DineInTableStatus @default(AVAILABLE)
+
+  restaurant Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  bills      DineInBill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([restaurantId, tableNumber])
+  @@index([restaurantId, status])
+  @@map("dine_in_tables")
+}
+
+// =====================================================
+// DINE-IN BILL
+// =====================================================
+
+enum DineInBillStatus {
+  OPEN
+  PAID
+  CANCELLED
+}
+
+model DineInBill {
+  id          Int              @id @default(autoincrement())
+  tableId     Int
+  status      DineInBillStatus @default(OPEN)
+  totalAmount Decimal          @default(0) @db.Decimal(10, 2)
+
+  table DineInTable      @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  items DineInBillItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tableId, status])
+  @@index([status, createdAt])
+  @@map("dine_in_bills")
+}
+
+// =====================================================
+// DINE-IN BILL ITEM
+// =====================================================
+
+model DineInBillItem {
+  id Int @id @default(autoincrement())
+
+  billId Int
+
+  // Reference to the menu variant currently used.
+  // Nullable so historical bills survive menu deletion.
+  menuItemVariantId Int?
+
+  // Snapshots — important for old bills.
+  itemName    String
+  variantName String?
+  unitPrice   Decimal @db.Decimal(10, 2)
+  quantity    Int
+  totalPrice  Decimal @db.Decimal(10, 2)
+
+  bill DineInBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+
+  menuItemVariant MenuItemVariant? @relation(fields: [menuItemVariantId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([billId])
+  @@index([menuItemVariantId])
+  @@map("dine_in_bill_items")
+}
