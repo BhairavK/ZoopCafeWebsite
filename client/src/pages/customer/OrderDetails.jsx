@@ -49,7 +49,7 @@ const STATUS_STEPS = [
 ];
 
 function OrderDetails() {
-  const { id } = useParams();
+  const { orderId } = useParams();
 
   const {
     token,
@@ -78,7 +78,7 @@ function OrderDetails() {
       setError("");
 
       const response = await fetch(
-        `${API_URL}/orders/${id}`,
+        `${API_URL}/orders/${orderId}`,
         {
           headers: {
             Authorization:
@@ -117,7 +117,7 @@ function OrderDetails() {
     if (isAuthenticated) {
       fetchOrder();
     }
-  }, [id, token, isAuthenticated]);
+  }, [orderId, token, isAuthenticated]);
 
   const handleCancelOrder =
     async () => {
