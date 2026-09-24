@@ -1202,7 +1202,7 @@ async function createCombo(
           data: {
             menuItemId: softDrink.id,
             name: "Regular",
-            price: 0,
+            price: 20,
             displayOrder: 0,
             isAvailable: true,
           },

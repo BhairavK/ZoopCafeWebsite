@@ -17,7 +17,14 @@ import dineInBillingRoutes from "./routes/admin.dine-in-billing.routes.js";
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://zoop-cafe-website.vercel.app",
+    ],
+  })
+);
 app.use(express.json());
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/menu", menuRoutes);
