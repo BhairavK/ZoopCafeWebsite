@@ -51,6 +51,9 @@ import Login from
 import Register from
   "./pages/auth/Register";
 
+import ForgotPassword from
+  "./pages/auth/ForgotPassword";
+
 
 /*
 |--------------------------------------------------------------------------
@@ -138,6 +141,11 @@ function App() {
         <Route
           path="/register"
           element={<Register />}
+        />
+
+        <Route
+          path="/forgot-password"
+          element={<ForgotPassword />}
         />
 
 
