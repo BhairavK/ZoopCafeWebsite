@@ -140,9 +140,7 @@ function Menu() {
 
   return (
     <div className="min-h-screen px-5 py-16 sm:px-8 lg:px-10">
-        <div className="text-center text-sm text-gray-400">
-  Cart: {itemCount} items · ₹{cartTotal}
-</div>
+        
 
       <div className="mx-auto max-w-7xl">
 

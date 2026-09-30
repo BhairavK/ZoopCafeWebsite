@@ -82,3 +82,31 @@ export const getCurrentUser = async (token) => {
 
   return data;
 };
+
+export const resetPassword = async ({
+  email,
+  newPassword,}) => {
+  const response = await fetch(
+    `${API_URL}/auth/forgot-password`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        newPassword,
+      }),
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || "Failed to update password"
+    );
+  }
+
+  return data;
+};

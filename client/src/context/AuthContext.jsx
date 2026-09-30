@@ -9,6 +9,7 @@ import {
   loginUser,
   registerUser,
   getCurrentUser,
+  resetPassword,
 } from "../api/authApi";
 
 const AuthContext = createContext();
@@ -114,6 +115,18 @@ export function AuthProvider({ children }) {
     return response;
   };
 
+
+  /*
+  |--------------------------------------------------------------------------
+  | FORGOT PASSWORD
+  |--------------------------------------------------------------------------
+  */
+
+  const forgotPassword = async ({ email, newPassword }) => {
+    const response = await resetPassword({ email, newPassword });
+    return response;
+  };
+
   /*
   |--------------------------------------------------------------------------
   | LOGOUT
@@ -155,6 +168,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    forgotPassword,
   };
 
   return (

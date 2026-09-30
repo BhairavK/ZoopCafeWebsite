@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Link,
-  useLocation,
   useNavigate,
 } from "react-router-dom";
 
@@ -14,65 +13,60 @@ import {
 import { useAuth } from "../../context/AuthContext";
 
 
-function Login() {
+function ForgotPassword() {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const { login } = useAuth();
-
-
   const [email, setEmail] = useState("");
+  const { forgotPassword } = useAuth();
   const [password, setPassword] = useState("");
-
-  const [showPassword, setShowPassword] =
-    useState(false);
-
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword,setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-
-  /*
-   * If another page sends the user to login,
-   * we can return them there after login.
-   *
-   * Example:
-   * /login?redirect=/checkout
-   */
-
-  const redirectPath =
-    new URLSearchParams(location.search).get(
-      "redirect"
-    ) || "/menu";
-
-
   const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  setError("");
-  setLoading(true);
-
-  try {
-    const data = await login({
-      email,
-      password,
-    });
-
-    if (data.user.role === "ADMIN") {
-      navigate("/admin");
-    } else {
-      navigate("/menu");
+    e.preventDefault();
+    setError("");
+    const trimmedEmail = email.trim().toLowerCase();
+    if (password.length < 6) {
+      setError(
+        "Password must contain at least 6 characters."
+      );
+      return;
     }
+    if (password !== confirmPassword) {
+      setError(
+        "Passwords do not match."
+      );
+      return;
+    }
+    setLoading(true);
+    try {
+      await forgotPassword({
+        email: trimmedEmail,
+        newPassword: password,
+      });
 
-  } catch (error) {
-    setError(
-      error.message ||
-      "Login failed"
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+      /*
+       * Forgot password succeeds.
+       * User can now login with new password.
+       */
+      navigate(
+        `/login?registered=true`,
+        {
+          replace: true,
+        }
+      );
+    } catch (error) {
 
+      setError(
+        error.message ||
+        "Unable to update password. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#0b0b0b] px-5 py-10">
@@ -109,11 +103,11 @@ function Login() {
           <div className="mb-8 text-center">
 
             <h1 className="heading-font text-3xl uppercase text-white">
-              Welcome Back
+              Forgot Password
             </h1>
 
             <p className="mt-2 text-sm text-white/50">
-              Login to order your favorite food.
+              Enter your mail address and set new password.
             </p>
 
           </div>
@@ -137,20 +131,19 @@ function Login() {
             onSubmit={handleSubmit}
             className="space-y-5"
           >
-
             {/* Email */}
 
             <div>
 
               <label
-                htmlFor="login-email"
+                htmlFor="register-email"
                 className="mb-2 block text-sm text-white/70"
               >
                 Email Address
               </label>
 
               <input
-                id="login-email"
+                id="register-email"
                 type="email"
                 value={email}
                 onChange={(e) =>
@@ -171,7 +164,7 @@ function Login() {
             <div>
 
               <label
-                htmlFor="login-password"
+                htmlFor="register-password"
                 className="mb-2 block text-sm text-white/70"
               >
                 Password
@@ -180,7 +173,7 @@ function Login() {
               <div className="relative">
 
                 <input
-                  id="login-password"
+                  id="register-password"
                   type={
                     showPassword
                       ? "text"
@@ -190,24 +183,13 @@ function Login() {
                   onChange={(e) =>
                     setPassword(e.target.value)
                   }
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
+                  placeholder="Create a password"
+                  autoComplete="new-password"
                   required
+                  minLength={6}
                   disabled={loading}
                   className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 pr-12 text-white outline-none transition placeholder:text-white/25 focus:border-[#D92323] disabled:cursor-not-allowed disabled:opacity-60"
                 />
-
-                {/* Forgot Password */}
-
-                <p className="mt-7 text-center text-sm text-white/50">
-                  Forgot your password?{" "}
-                  <Link
-                    to="/forgot-password"
-                    className="font-medium text-[#D92323] hover:underline"
-                  >
-                    Reset it
-                  </Link>
-                </p>
 
                 <button
                   type="button"
@@ -225,6 +207,71 @@ function Login() {
                 >
 
                   {showPassword ? (
+                    <EyeOff size={20} />
+                  ) : (
+                    <Eye size={20} />
+                  )}
+
+                </button>
+
+              </div>
+
+              <p className="mt-2 text-xs text-white/35">
+                Minimum 6 characters
+              </p>
+
+            </div>
+
+
+            {/* Confirm Password */}
+
+            <div>
+
+              <label
+                htmlFor="register-confirm-password"
+                className="mb-2 block text-sm text-white/70"
+              >
+                Confirm Password
+              </label>
+
+              <div className="relative">
+
+                <input
+                  id="register-confirm-password"
+                  type={
+                    showConfirmPassword
+                      ? "text"
+                      : "password"
+                  }
+                  value={confirmPassword}
+                  onChange={(e) =>
+                    setConfirmPassword(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Re-enter your password"
+                  autoComplete="new-password"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-3 pr-12 text-white outline-none transition placeholder:text-white/25 focus:border-[#D92323] disabled:cursor-not-allowed disabled:opacity-60"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowConfirmPassword(
+                      (prev) => !prev
+                    )
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 transition hover:text-white"
+                  aria-label={
+                    showConfirmPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
+                >
+
+                  {showConfirmPassword ? (
                     <EyeOff size={20} />
                   ) : (
                     <Eye size={20} />
@@ -253,25 +300,25 @@ function Login() {
               )}
 
               {loading
-                ? "Logging In..."
-                : "Login"}
+                ? "Updating Password..."
+                : "Update Password"}
 
             </button>
 
           </form>
 
 
-          {/* Register */}
+          {/* Login */}
 
           <p className="mt-7 text-center text-sm text-white/50">
 
-            Don't have an account?{" "}
+            Already have an account?{" "}
 
             <Link
-              to="/register"
+              to="/login"
               className="font-medium text-[#D92323] hover:underline"
             >
-              Create one
+              Login
             </Link>
 
           </p>
@@ -284,4 +331,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default ForgotPassword;
